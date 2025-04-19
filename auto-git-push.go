@@ -11,68 +11,74 @@ import (
 
 func main() {
 	for {
-		// Check and commit changes
 		checkAndPushChanges()
 
-		// Wait for 30 seconds before the next check
 		fmt.Println("Waiting for 15 seconds...")
 		time.Sleep(15 * time.Second)
 	}
 }
 
-// checkAndPushChanges checks for modified files, adds, commits, and pushes them if needed
+// checkAndPushChanges checks for changes, commits, pulls latest, then pushes
 func checkAndPushChanges() {
 	// Step 1: git status --porcelain
 	cmd := exec.Command("git", "status", "--porcelain")
 	var out bytes.Buffer
 	cmd.Stdout = &out
+	cmd.Stderr = &out
 
 	err := cmd.Run()
 	if err != nil {
-		log.Printf("Failed to run git status: %v", err)
+		log.Printf("Failed to run git status: %v\nOutput:\n%s", err, out.String())
 		return
 	}
 
-	// Split output into lines
-	changes := strings.Split(strings.TrimSpace(out.String()), "\n")
-
-	// If there's no change, do nothing
-	if len(changes) == 1 && changes[0] == "" {
+	statusOutput := strings.TrimSpace(out.String())
+	if statusOutput == "" {
 		fmt.Println("No changes detected.")
 		return
 	}
 
-	fmt.Printf("Detected %d modified file(s).\n", len(changes))
+	changes := strings.Split(statusOutput, "\n")
+	fmt.Printf("Detected %d modified/untracked file(s).\n", len(changes))
 
-	// Step 2: git add .
-	err = runGitCommand("add", ".")
-	if err != nil {
+	// Step 2: git add --all
+	if err := runGitCommand("add", "--all"); err != nil {
 		log.Printf("git add failed: %v", err)
 		return
 	}
 
-	// Step 3: git commit -m "updated time"
-	commitMsg := fmt.Sprintf("updated time: %s", time.Now().Format(time.RFC3339))
-	err = runGitCommand("commit", "-m", commitMsg)
-	if err != nil {
+	// Step 3: git commit -m "Auto-update: <timestamp>"
+	commitMsg := fmt.Sprintf("Auto-update: %s", time.Now().Format(time.RFC3339))
+	if err := runGitCommand("commit", "-m", commitMsg); err != nil {
 		log.Printf("git commit failed: %v", err)
 		return
 	}
 
-	// Step 4: git push
-	err = runGitCommand("push")
-	if err != nil {
+	// Step 4: git pull --rebase
+	if err := runGitCommand("pull", "--rebase"); err != nil {
+		log.Printf("git pull --rebase failed: %v", err)
+		return
+	}
+
+	// Step 5: git push
+	if err := runGitCommand("push"); err != nil {
 		log.Printf("git push failed: %v", err)
 		return
 	}
 
-	fmt.Println("Changes committed and pushed successfully.")
+	fmt.Println("Changes committed, pulled latest, and pushed successfully.")
 }
 
-// runGitCommand executes a git command with given arguments
+// runGitCommand executes a git command and logs stderr if it fails
 func runGitCommand(args ...string) error {
 	cmd := exec.Command("git", args...)
-	cmd.Stdout = nil
-	cmd.Stderr = nil
-	return cmd.Run()
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
+
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("command 'git %s' failed: %v\nOutput:\n%s", strings.Join(args, " "), err, out.String())
+	}
+	return nil
 }
