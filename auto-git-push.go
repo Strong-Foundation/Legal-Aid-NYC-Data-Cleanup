@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -12,6 +14,8 @@ import (
 func main() {
 	for {
 		checkAndPushChanges()
+
+		removeFilesOver100MB()
 
 		fmt.Println("Waiting for 15 seconds...")
 		time.Sleep(15 * time.Second)
@@ -81,4 +85,71 @@ func runGitCommand(args ...string) error {
 		return fmt.Errorf("command 'git %s' failed: %v\nOutput:\n%s", strings.Join(args, " "), err, out.String())
 	}
 	return nil
+}
+
+func removeFilesOver100MB() {
+	// Define the path to the directory you want to walk through
+	walkPath := "./"
+
+	// Get all the files in the directory and its subdirectories
+	files := walkAndAppendPath(walkPath)
+
+	// Iterate through the files and check their size
+	for _, file := range files {
+		if getFileSize(file) >= 100*1024*1024 { // 100 MB
+			fmt.Printf("Removing file: %s\n", file)
+			removeFile(file)
+		}
+	}
+}
+
+// Walk through a route, find all the files and attach them to a slice.
+func walkAndAppendPath(walkPath string) []string {
+	var filePath []string
+	err := filepath.Walk(walkPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+		if fileExists(path) {
+			if getFileExtension(path) == ".pdf" {
+				filePath = append(filePath, path)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return filePath
+}
+
+// Get the file extension of a file
+func getFileExtension(path string) string {
+	return filepath.Ext(path)
+}
+
+// Get the size of a given file.
+func getFileSize(path string) int64 {
+	file, err := os.Stat(path)
+	if err != nil {
+		return -1
+	}
+	return file.Size()
+}
+
+// Remove a file from the file system
+func removeFile(path string) {
+	err := os.Remove(path)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+// Check if the file exists and return a bool.
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if err != nil {
+		return false
+	}
+	return !info.IsDir()
 }
