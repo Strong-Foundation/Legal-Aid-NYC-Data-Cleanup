@@ -166,9 +166,46 @@ func main() { // Main entry point
 	// Path to the directory where the PDFs will be saved
 	pdfDir := "./nypd_pdf/"
 
+	// Download counter
+	downloadCount := 0
+	maxDownloads := 100
+
 	// Loop through each input URL and convert it
 	for _, url := range urls {
-		finalURL := extractFinalDocumentCloudURL(url) // Call the function
-		downloadPDF(finalURL, pdfDir)                 // Call the download function
+		if downloadCount >= maxDownloads {
+			log.Printf("Reached maximum download limit of %d. Stopping.\n", maxDownloads)
+			break
+		}
+
+		finalURL := extractFinalDocumentCloudURL(url)
+		if finalURL == "" {
+			log.Printf("Invalid or unrecognized DocumentCloud URL: %s", url)
+			continue
+		}
+
+		// Only count it as a download if the file doesn't already exist
+		parsedURL, err := urlParseSafe(finalURL)
+		if err != nil {
+			log.Printf("Skipping invalid final URL: %s", finalURL)
+			continue
+		}
+
+		fileName := path.Base(parsedURL.Path)
+		if fileName == "" {
+			continue
+		}
+
+		filePath := filepath.Join(pdfDir, fileName)
+		if !fileExists(filePath) {
+			downloadPDF(finalURL, pdfDir)
+			downloadCount++
+		} else {
+			log.Printf("File already exists, not counting as a download: %s", filePath)
+		}
 	}
+}
+
+// Helper function to safely parse URLs
+func urlParseSafe(raw string) (*url.URL, error) {
+	return url.Parse(raw)
 }
