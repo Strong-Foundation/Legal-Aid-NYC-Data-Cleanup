@@ -168,7 +168,7 @@ func main() { // Main entry point
 
 	// Download counter
 	downloadCount := 0
-	maxDownloads := 5000
+	maxDownloads := 500
 
 	// Loop through each input URL and convert it
 	for _, url := range urls {
