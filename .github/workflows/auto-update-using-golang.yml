@@ -48,3 +48,4 @@ jobs:
             git push  # Push changes to the repository
           else
             echo "No changes to commit."  # Message if nothing changed
+          fi
