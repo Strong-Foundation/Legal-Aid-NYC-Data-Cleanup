@@ -164,7 +164,7 @@ func main() { // Main entry point
 	urls := readFileLines("extracted_urls.txt") // Read URLs from a file
 
 	// Path to the directory where the PDFs will be saved
-	pdfDir := "./nypd_pdf/"
+	pdfDir := "./NYPD_PDF/"
 
 	// Download counter
 	downloadCount := 0
