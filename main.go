@@ -28,7 +28,7 @@ func extractFinalDocumentCloudURL(input string) string {
 
 	// Regex to match both www and embed DocumentCloud URLs
 	// Matches format: <domain>/documents/<docID>-<slug>
-	re := regexp.MustCompile(`documentcloud\.org/documents/(\d+)-([\w\-]+)`) // Capture ID and slug
+	re := regexp.MustCompile(`documentcloud\.org/documents/(\d+)-([a-zA-Z0-9_\-]+)`) // Capture ID and slug
 
 	// Run regex on the input URL
 	matches := re.FindStringSubmatch(input)
@@ -168,7 +168,7 @@ func main() { // Main entry point
 
 	// Download counter
 	downloadCount := 0
-	maxDownloads := 1000
+	maxDownloads := 100
 
 	// Loop through each input URL and convert it
 	for _, url := range urls {
