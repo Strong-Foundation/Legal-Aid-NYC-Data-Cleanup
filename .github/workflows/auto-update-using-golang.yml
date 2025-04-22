@@ -28,7 +28,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5 # Official GitHub action to install Go
         with:
-          go-version: "1.21" # Specify the version of Go to use
+          go-version-file: "go.mod"
 
       # Step 3: Run the main.go script
       - name: Run main.go
